@@ -94,45 +94,50 @@ public abstract class NLRGRule extends NLRGKnowledgeBaseElement {
 
 		NLRGPredicate predicate = new NLRGPredicate();
 		
-		/* If new predicate is not empty and not already added to the rule
-		 * proceed to add its relevant arguments
-		 */	
+		/* If new predicate is not empty proceed to create relevant argument object list and add it to predicate */	
 		predicate.setName(predicateIdentifier);
-		if (predicate.getNameText() != "" && !this.containsPredicate(predicate, predicateRulePart)) {
-		
-			String predicateKey = Integer.toString(this.CurrentPredicateIndex++);
+		if (predicate.getNameText() != "") {
 			
-			/* Also add respective variables */	
 			ArrayList<NLRGPredicateArgument> arguments = new ArrayList<NLRGPredicateArgument>();	
 			for (String argumentIdentifier : argumentIdentifiers)
 				arguments.add(new NLRGPredicateArgument(argumentIdentifier));
 			
-			addPredicateWithArguments(predicateKey, predicate, arguments, predicateRulePart);
+			predicate.setArguments(arguments);
+
+			/* If new predicate with the same argumentsis  not already added to the rule
+			 * proceed to add it to the respective part of the rule
+			 */	
+			if (!this.containsPredicateWithArguments(predicate, predicateRulePart, true)) {
+		
+				String predicateKey = Integer.toString(this.CurrentPredicateIndex++);
 			
-			return 1;
+				addPredicate(predicateKey, predicate, predicateRulePart);
+			
+				return 1;
+			}
 		
 		}
-		else
-			return 0;
+
+		return 0;
 
 	}
 
 
 
-	public boolean headContains(NLRGPredicate testPred) {
+	public boolean headContainsPredicateName(NLRGPredicate testPred, boolean ignoreNegation) {
 
 		for (NLRGPredicate headPredicate : Head.values())
-			if (headPredicate.sameNameAs(testPred.getName()))
+			if (headPredicate.sameNameAs(testPred.getName(), ignoreNegation))
 				return true;
 
 		return false;
 	}
 	
 
-	public boolean bodyContains(NLRGPredicate testPred) {
+	public boolean bodyContainsPredicateName(NLRGPredicate testPred, boolean ignoreNegation) {
 
-		for (NLRGPredicate headPredicate : Body.values())
-			if (headPredicate.sameNameAs(testPred.getName()))
+		for (NLRGPredicate bodyPredicate : Body.values())
+			if (bodyPredicate.sameNameAs(testPred.getName(), ignoreNegation))
 				return true;
 
 		return false;
@@ -140,12 +145,44 @@ public abstract class NLRGRule extends NLRGKnowledgeBaseElement {
 
 	
 	
-	public boolean containsPredicate(NLRGPredicate testPred, RulePart predicateRulePart) {
+	public boolean containsPredicateName(NLRGPredicate testPred, RulePart predicateRulePart, boolean ignoreNegation) {
 
 		if (predicateRulePart == RulePart.HEAD)
-			return headContains(testPred);
+			return headContainsPredicateName(testPred, ignoreNegation);
 		else
-			return bodyContains(testPred);
+			return bodyContainsPredicateName(testPred, ignoreNegation);
+
+	}
+
+
+
+	public boolean headContainsPredicateWithArguments(NLRGPredicate testPred, boolean ignoreNegation) {
+
+		for (NLRGPredicate headPredicate : Head.values())
+			if (headPredicate.sameNameAndArgumentsAs(testPred.getName(), testPred.getArguments(), ignoreNegation))
+				return true;
+
+		return false;
+	}
+	
+
+	public boolean bodyContainsPredicateWithArguments(NLRGPredicate testPred, boolean ignoreNegation) {
+
+		for (NLRGPredicate bodyPredicate : Body.values())
+			if (bodyPredicate.sameNameAndArgumentsAs(testPred.getName(), testPred.getArguments(), ignoreNegation))
+				return true;
+
+		return false;
+	}
+
+	
+	
+	public boolean containsPredicateWithArguments(NLRGPredicate testPred, RulePart predicateRulePart, boolean ignoreNegation) {
+
+		if (predicateRulePart == RulePart.HEAD)
+			return headContainsPredicateWithArguments(testPred, ignoreNegation);
+		else
+			return bodyContainsPredicateWithArguments(testPred, ignoreNegation);
 
 	}
 

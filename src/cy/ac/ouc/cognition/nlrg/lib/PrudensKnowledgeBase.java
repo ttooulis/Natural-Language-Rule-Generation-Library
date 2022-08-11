@@ -274,7 +274,12 @@ public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
 			            		if (position == 3 || isPredicate) {
 			            			if (varName.equals("args")) 
 					            		isPredicate = false;
-			            			else
+			            			// If variable is not empty or placeholder
+			            			else if (	!varName.isBlank() &&
+			            						!varName.equals("_") &&
+			            						!varName.equals("\'\'") &&
+			            						!varName.equals("")
+			            					)
 			            				predicateIdentifier.add(varName);
 				            	}
 

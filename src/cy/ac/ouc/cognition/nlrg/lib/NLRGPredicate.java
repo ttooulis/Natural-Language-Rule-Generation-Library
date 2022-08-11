@@ -77,21 +77,33 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 		Name.add(new String(name));
 	}
 
-	public String getNameText( ) {
+
+	
+	public static String buildNameText(List<String> name, boolean ignoreNegation) {
 		
 		String nameText = "";
-		int i = 0;
+		int i = 0, doNotCapitalizeIndex = 1;
 		
-		for (String name : Name) {
+		for (String namePart : name) {
 			i++;
-			if (i==1)
-				nameText += name;
+			
+			if (i==1 && ignoreNegation && namePart.equals("\'-\'"))
+				i--;
+			
+			else if (namePart.equals("\'-\'")) {
+				doNotCapitalizeIndex = i + 1;
+				nameText += namePart.replaceAll("\'", "");
+			}
+
+			else if (i==1)
+				nameText += namePart;
+
 			else {
 				nameText += NLRGParameterLib.NLRGRule_PredNameConcatChar;
-				if (NLRGParameterLib.NLRGRule_PredNameCapitalize == 1)
-					nameText += name.substring(0, 1).toUpperCase() + name.substring(1);
+				if (NLRGParameterLib.NLRGRule_PredNameCapitalize == 1 && i != doNotCapitalizeIndex)
+					nameText += namePart.substring(0, 1).toUpperCase() + namePart.substring(1);
 				else
-					nameText += name;
+					nameText += namePart;
 			}
 		}
 		
@@ -100,11 +112,32 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 	}
 	
 	
-	public boolean sameNameAs(List<String> name) {
-		return Name.toString().equals(name.toString());
+	public static boolean comparePredicateNames(List<String> nameOne, List<String> nameTwo, boolean ignoreNegation) {
+		return buildNameText(nameOne, ignoreNegation).equals(buildNameText(nameTwo, ignoreNegation));
 	}
 
 
+	public String getNameText() {
+		return buildNameText(this.Name, false);
+	}
+
+	
+	public String getNameText(boolean ignoreNegation) {
+		return buildNameText(this.Name, ignoreNegation);
+	}
+
+	
+	public boolean sameNameAs(List<String> name, boolean ignoreNegation) {
+		return comparePredicateNames(Name, name, ignoreNegation);
+	}
+
+	
+	public boolean sameNameAs(List<String> name) {
+		return this.sameNameAs(name, false);
+	}
+
+
+	
 	/**
 	 * @return the arguments
 	 */
@@ -138,38 +171,74 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 	}
 
 
-    public String toString() {
+
+    public static String buildPredicateText(List<String> name, List<NLRGPredicateArgument> arguments, boolean ignoreNegation) {
     	
     	String predicateString = "";
 
-    	if (Generate) {
-
-	    	predicateString = getNameText();
+    	predicateString = buildNameText(name, ignoreNegation);
     	
-	    	if (!predicateString.isEmpty()) {
+	    if (!predicateString.isEmpty()) {
 
-		    	if (!Arguments.isEmpty()) {
+		    if (!arguments.isEmpty()) {
 		    		
-		    		predicateString += "(";
+		    	predicateString += "(";
 		
-		        	int count = 0;
-		    		for (NLRGPredicateArgument Argument : Arguments) {
+		        int count = 0;
+		    	for (NLRGPredicateArgument argument : arguments) {
 			
-			    		count++;
-			    		if (count > 1)
-			    			predicateString += ", ";
+			    	count++;
+			    	if (count > 1)
+			    		predicateString += ", ";
 			
-			    		predicateString += Argument.toString();
+			    	predicateString += argument.toString();
 			
-		    		}
-			
-			    	predicateString += ")";
 		    	}
-	    	}
-    	}
+			
+			    predicateString += ")";
+		    }
+	    }
     	
     	return predicateString;
     }
 
+    
+    public static String buildPredicateText(NLRGPredicate predicate, boolean ignoreNegation) {
+		return buildPredicateText(predicate.Name, predicate.Arguments, false);
+    }
+    
+    
+	public static boolean comparePredicateNameAndArguments(
+			List<String> nameOne,
+			List<NLRGPredicateArgument> argumentsOne,
+			List<String> nameTwo,
+			List<NLRGPredicateArgument> argumentsTwo,
+			boolean ignoreNegation) {
+		
+		return buildPredicateText(nameOne, argumentsOne, ignoreNegation).equals(buildPredicateText(nameTwo, argumentsTwo, ignoreNegation));
+	}
+
+	
+	public boolean sameNameAndArgumentsAs(List<String> name, List<NLRGPredicateArgument> arguments) {
+		return this.sameNameAndArgumentsAs(name, arguments, false);
+	}
+
+
+	public boolean sameNameAndArgumentsAs(List<String> name, List<NLRGPredicateArgument> arguments, boolean ignoreNegation) {
+		return comparePredicateNameAndArguments(this.Name, this.Arguments, name, arguments, ignoreNegation);
+	}
+	
+	
+    public String toString(boolean ignoreNegation) {
+    	if (Generate)
+    		return buildPredicateText(this, false);
+    	
+    	return "";
+    }
+
+    
+    public String toString() {
+    	return this.toString(false);
+    }
 
 }
