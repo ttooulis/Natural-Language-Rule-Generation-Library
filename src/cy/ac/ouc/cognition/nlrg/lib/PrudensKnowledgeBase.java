@@ -243,6 +243,11 @@ public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
 				            		metaRuleMode = RulePart.BODY;
 					            	outln(TL, "MetaRule Type: Body");
 				            	}
+				            	else if (varName.startsWith("conflict")) {
+				            		metaRuleMode = RulePart.HEAD;
+				            		extractedRule.setConflict(true);
+					            	outln(TL, "MetaRule Type: Conflict");
+				            	}
 				            	else {
 					            	errln("\tMetaRule Type: Undefined");
 					            	throw new NLRGMetaKBException(

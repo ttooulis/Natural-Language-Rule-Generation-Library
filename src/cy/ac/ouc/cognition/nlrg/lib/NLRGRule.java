@@ -16,6 +16,8 @@ public abstract class NLRGRule extends NLRGKnowledgeBaseElement {
 	protected int		CurrentPredicateIndex = 0;
 	protected boolean	Complete;
 	
+	protected boolean	Conflict = false;
+	
 
 	
 	NLRGRule() {
@@ -267,4 +269,22 @@ public abstract class NLRGRule extends NLRGKnowledgeBaseElement {
 
 	}
 	
+
+
+
+	/**
+	 * @return the Conflict
+	 */
+	public  boolean isConflict() {
+		return Conflict;
+	}
+	
+
+
+	/**
+	 * @param the conflict to set
+	 */
+	public void setConflict(boolean conflict) {
+		Conflict = conflict;
+	}
 }

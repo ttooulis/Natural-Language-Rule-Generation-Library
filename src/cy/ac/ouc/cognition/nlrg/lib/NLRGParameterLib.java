@@ -28,6 +28,7 @@ public class NLRGParameterLib extends NLRGParameter {
 	public static String NLRGRule_PredNameConcatChar = "";
 	public static int NLRGRule_PredNameCapitalize = 0;
 	public static String NLRGRule_NeckSymbol = "implies";
+	public static String NLRGRule_ConflictNeckSymbol = "#";
 	public static int NLRGRule_GenerateName = 1;
 	public static String NLRGRule_NameSeperator = "::";
 
@@ -72,6 +73,7 @@ public class NLRGParameterLib extends NLRGParameter {
 		NLRGRule_PredNameConcatChar = ReadParameterTrace("PredicateNameConcatChar", "");
 		NLRGRule_PredNameCapitalize = ReadIntParameterTrace("PredicateNameCapitalize", 0);
 		NLRGRule_NeckSymbol = ReadParameterTrace("NeckSymbol", "implies");
+		NLRGRule_ConflictNeckSymbol = ReadParameterTrace("ConflictNeckSymbol", "#");
 		NLRGRule_GenerateName = ReadIntParameterTrace("GenerateName", 1);
 		NLRGRule_NameSeperator = ReadParameterTrace("NameSeperator", "::");
 

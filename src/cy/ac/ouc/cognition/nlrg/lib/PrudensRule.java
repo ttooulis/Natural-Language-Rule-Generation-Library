@@ -56,7 +56,10 @@ public class PrudensRule extends NLRGRule {
     		String bodyText = generatePredicateSetText(RulePart.BODY);
 
     		if (!bodyText.isEmpty())
-    			ruleText +=	bodyText + " " + NLRGParameterLib.NLRGRule_NeckSymbol + " ";
+    			if (this.isConflict())
+    				ruleText +=	bodyText + " " + NLRGParameterLib.NLRGRule_ConflictNeckSymbol + " ";
+    			else
+    				ruleText +=	bodyText + " " + NLRGParameterLib.NLRGRule_NeckSymbol + " ";
     		
     		String headText = generatePredicateSetText(RulePart.HEAD);
     		
