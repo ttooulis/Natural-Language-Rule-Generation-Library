@@ -88,9 +88,10 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 			i++;
 			
 			if (i==1 && ignoreNegation && namePart.equals("\'-\'"))
-				i--;
+				i = 0;
 			
-			else if (namePart.equals("\'-\'")) {
+			// If current word belongs in capitalisation exceptions list, do not capitalise next word, if should
+			else if (namePart.matches(NLRGParameterLib.NLRGRule_PredNameCapitalizeExceptions)) {
 				doNotCapitalizeIndex = i + 1;
 				nameText += namePart.replaceAll("\'", "");
 			}

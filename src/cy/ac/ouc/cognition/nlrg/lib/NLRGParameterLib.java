@@ -26,7 +26,8 @@ public class NLRGParameterLib extends NLRGParameter {
 	 * Rule Generation Parameters
 	 ********************************/
 	public static String NLRGRule_PredNameConcatChar = "";
-	public static int NLRGRule_PredNameCapitalize = 0;
+	public static int NLRGRule_PredNameCapitalize = 1;
+	public static String NLRGRule_PredNameCapitalizeExceptions = "'-'|'!'";
 	public static String NLRGRule_NeckSymbol = "implies";
 	public static String NLRGRule_ConflictNeckSymbol = "#";
 	public static int NLRGRule_GenerateName = 1;
@@ -71,7 +72,8 @@ public class NLRGParameterLib extends NLRGParameter {
 		NLRGMetaKB_PredicateMode = ReadIntParameterTrace("MetaPredicateMode", 0);
 		
 		NLRGRule_PredNameConcatChar = ReadParameterTrace("PredicateNameConcatChar", "");
-		NLRGRule_PredNameCapitalize = ReadIntParameterTrace("PredicateNameCapitalize", 0);
+		NLRGRule_PredNameCapitalize = ReadIntParameterTrace("PredicateNameCapitalize", 1);
+		NLRGRule_PredNameCapitalizeExceptions = ReadParameterTrace("PredicateNameCapitalizeExceptions", "'-'|'!'");
 		NLRGRule_NeckSymbol = ReadParameterTrace("NeckSymbol", "implies");
 		NLRGRule_ConflictNeckSymbol = ReadParameterTrace("ConflictNeckSymbol", "#");
 		NLRGRule_GenerateName = ReadIntParameterTrace("GenerateName", 1);
