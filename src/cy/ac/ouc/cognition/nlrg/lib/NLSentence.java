@@ -8,12 +8,12 @@ public class NLSentence extends NLThing {
 
 	private HashMap<Integer, NLToken>		Tokens;
 	private List<NLDependency>				Dependencies;
-	private List<NLPredicate>				MetaPredicates;
-	private	NLRGQuery						MetaQuery;
+	private List<NLPredicate>				Predicates;
+	private	NLRGContext						Context;
 	private NLRGRule						ExtractedRule;
 	
 	boolean									PredicatesGenerated = false;
-	boolean									MetaQueryBuilt = false;
+	boolean									ContextBuilt = false;
 	boolean									RuleSet = false;
 	
 	
@@ -21,7 +21,7 @@ public class NLSentence extends NLThing {
 		super(sentenceText);
 		Tokens = new HashMap<Integer, NLToken>();
 		Dependencies = new ArrayList<>();
-		MetaPredicates = new ArrayList<>();
+		Predicates = new ArrayList<>();
 	}
 	
 	
@@ -29,7 +29,7 @@ public class NLSentence extends NLThing {
 	public void addToken(int index, NLToken nlpToken) {
 		Tokens.put(index, nlpToken);
 		PredicatesGenerated = false;
-		MetaQueryBuilt = false;
+		ContextBuilt = false;
 		RuleSet = false;
 		Complete = false;
 	}
@@ -43,7 +43,7 @@ public class NLSentence extends NLThing {
 	public void addDependency(NLDependency dependency) {
 		Dependencies.add(dependency);
 		PredicatesGenerated = false;
-		MetaQueryBuilt = false;
+		ContextBuilt = false;
 		RuleSet = false;
 		Complete = false;
 	}
@@ -93,7 +93,7 @@ public class NLSentence extends NLThing {
 					Arguments.add(new NLRGPredicateArgument(nlToken.getNER().toLowerCase(), -1));
 					Arguments.add(new NLRGPredicateArgument(wordLemma, nlToken.getIndex()));
 	
-					MetaPredicates.add(new NLPredicate(
+					Predicates.add(new NLPredicate(
 														NLPredicate.RelationTypeName[NLPredicate.RelationType.TOKEN.ordinal()],
 														Arguments,
 														NLPredicate.RelationType.TOKEN,
@@ -102,7 +102,7 @@ public class NLSentence extends NLThing {
 										);
 				}
 				else {
-					MetaPredicates.add(new NLPredicate(
+					Predicates.add(new NLPredicate(
 														NLPredicate.RelationTypeName[NLPredicate.RelationType.POS.ordinal()],
 														nlToken.getTag().toLowerCase(),
 														-1,
@@ -114,7 +114,7 @@ public class NLSentence extends NLThing {
 											);
 					
 					if (!nlToken.getNER().equals("O"))
-						MetaPredicates.add(new NLPredicate(
+						Predicates.add(new NLPredicate(
 															NLPredicate.RelationTypeName[NLPredicate.RelationType.NER.ordinal()],
 															nlToken.getNER().toLowerCase(),
 															-1,
@@ -149,7 +149,7 @@ public class NLSentence extends NLThing {
 					dependentName = "punct_symbol";
 
 				
-				MetaPredicates.add(new NLPredicate(
+				Predicates.add(new NLPredicate(
 														dependencyName,
 														governorName,
 														nlDependency.getGovernor().getIndex(),
@@ -170,18 +170,18 @@ public class NLSentence extends NLThing {
 	
 
 
-	public void buildAndSetQuery(NLRGQuery metaQuery) {
-		MetaQuery = metaQuery;
+	public void buildAndSetContext(NLRGContext context) {
+		Context = context;
 		if (PredicatesGenerated) {
-			MetaQuery.BuildQuery(MetaPredicates);
-			MetaQueryBuilt = true;
+			Context.BuildContext(Predicates);
+			ContextBuilt = true;
 		}
 	}
 
 	
 	
-	public boolean isMetaQueryBuilt( ) {
-		return MetaQueryBuilt;
+	public boolean isContextBuilt( ) {
+		return ContextBuilt;
 	}
 
 
@@ -220,19 +220,19 @@ public class NLSentence extends NLThing {
 
 	
 	/**
-	 * @return the metapredicates
+	 * @return the predicates
 	 */
-	public List<NLPredicate> getMetaPredicates() {
-		return MetaPredicates;
+	public List<NLPredicate> getPredicates() {
+		return Predicates;
 	}
 
 
 	
 	/**
-	 * @return the metaquery
+	 * @return the context
 	 */
-	public NLRGQuery getMetaQuery() {
-		return MetaQuery;
+	public NLRGContext getContext() {
+		return Context;
 	}
 
 }

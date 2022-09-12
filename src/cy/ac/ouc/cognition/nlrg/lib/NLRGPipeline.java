@@ -215,9 +215,9 @@ public class NLRGPipeline extends NLRGThing {
 				metaPredicateText += "************************************************" + ls;
 
 				/* Create meta-predicate text */
-				for (NLPredicate nlpredicate : nlSentence.getMetaPredicates()) {
+				for (NLPredicate nlpredicate : nlSentence.getPredicates()) {
 
-					// CID - Re-think Query and Predicate class hierarchy a little bit
+					// CID - Re-think Context and Predicate class hierarchy a little bit
 					// and how to generalize Knowledge Base types
 					String predicateString;
 					predicateString = nlpredicate.toString();
@@ -238,32 +238,32 @@ public class NLRGPipeline extends NLRGThing {
 
 	
 	
-	// CID - Re-think Query and Predicate class hierarchy a little bit and how to generalize Knowledge Base types
-	public void buildMetaQueries() {
+	// CID - Re-think Context and Predicate class hierarchy a little bit and how to generalize Knowledge Base types
+	public void buildSentencesContext() {
 		
 		if (ProcessedDocument != null && ProcessedDocument.isComplete()) {
 
 			for (NLSentence nlSentence : ProcessedDocument.getDocumentSentences()) 
-				nlSentence.buildAndSetQuery(new PrudensQuery());
+				nlSentence.buildAndSetContext(new PrudensContext());
 
 		}
 
 		else
-        	errln("Cannot build meta-queries. Document processing not completed!");
+        	errln("Cannot build sentences context. Document processing not completed!");
 
 	}
 	
 
 	
-	public String getMetaQueryTextData() {
+	public String getSentencesContextTextData() {
 
 		/*
 		 * ******************************************************** 
-		 * Get Meta-Query Data String
+		 * Get Sentences Context Data String
 		 * ********************************************************
 		 */
 		
-		String metaQueryText = "";
+		String sentencesContextText = "";
 
 		if (ProcessedDocument != null && ProcessedDocument.isComplete()) {
 
@@ -271,29 +271,29 @@ public class NLRGPipeline extends NLRGThing {
 			for (NLSentence nlSentence : ProcessedDocument.getDocumentSentences()) {
 			
 				count++;
-				metaQueryText += "Sentence " + count + " : " + nlSentence.getText() + ls;
-				metaQueryText += "************************************************" + ls;
+				sentencesContextText += "Sentence " + count + " : " + nlSentence.getText() + ls;
+				sentencesContextText += "************************************************" + ls;
 
-				/* Create meta-query text */
-				// CID - Re-think Query and Predicate class hierarchy a little bit
+				/* Create sentence context text */
+				// CID - Re-think Context and Predicate class hierarchy a little bit
 				// and how to generalize Knowledge Base types
-				if (nlSentence.isMetaQueryBuilt())
-					metaQueryText += nlSentence.getMetaQuery().getQueryTextData();
+				if (nlSentence.isContextBuilt())
+					sentencesContextText += nlSentence.getContext().getContextTextData();
 
 			}
 		}
 		
 		else
-        	errln("Cannot get meta-queriy text data. Document processing not completed!");
+        	errln("Cannot get sentences context text data. Document processing not completed!");
 
-		return metaQueryText;
+		return sentencesContextText;
 
 	}
 
 	
 	
-	// CID - Re-think Query and Predicate class hierarchy a little bit and how to generalize Knowledge Base types
-	public void runMetaQueries(String metaKnoweldgeBaseString) {
+	// CID - Re-think Context and Predicate class hierarchy a little bit and how to generalize Knowledge Base types
+	public void extractRules(String metaKnoweldgeBaseString) {
 		
 		if (ProcessedDocument != null && ProcessedDocument.isComplete()) {
 
@@ -302,22 +302,22 @@ public class NLRGPipeline extends NLRGThing {
 				
 				i++;
 
-				if (nlSentence.isMetaQueryBuilt()) {
+				if (nlSentence.isContextBuilt()) {
 					
-					NLRGRule extractedRule;
+					NLRGRule ruleToBeExtracted;
 					String	ruleName = "S" + String.format("%07d", i);
 
 					if (NLRGParameterLib.NLRGPipeline_KnowledgeBaseType == "prudens") {
 
-						extractedRule = new PrudensRule(ruleName);
+						ruleToBeExtracted = new PrudensRule(ruleName);
 
 						try {
 
-							MetaKnowledgeBase.runExtractionQueryOnKB(metaKnoweldgeBaseString, nlSentence.getMetaQuery(), extractedRule);
-							nlSentence.setRule(extractedRule);
+							MetaKnowledgeBase.runSentenceContext(metaKnoweldgeBaseString, nlSentence.getContext(), ruleToBeExtracted);
+							nlSentence.setRule(ruleToBeExtracted);
 
 						} catch (NLRGMetaKBException e) {
-							errln("Error running extraction query on KB: " + e.getMessage());
+							errln("Error running extraction context on KB: " + e.getMessage());
 						}
 						
 					}
@@ -332,7 +332,7 @@ public class NLRGPipeline extends NLRGThing {
 		}
 
 		else
-        	errln("Cannot run meta-queries. Document processing not completed!");
+        	errln("Cannot extract rules. Document processing not completed!");
 
 		
 	}

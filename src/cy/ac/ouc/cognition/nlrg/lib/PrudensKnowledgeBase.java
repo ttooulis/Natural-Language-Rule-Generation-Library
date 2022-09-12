@@ -94,9 +94,9 @@ public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
 
 
 
-    public int checkSolution(String queryText, String knowledgeBaseString) {
+    public int inferFacts(String contextText, String knowledgeBaseString) {
 
-		InputStream stream = new ByteArrayInputStream(queryText.getBytes());
+		InputStream contextStream = new ByteArrayInputStream(contextText.getBytes());
 		Path p;
 		try {
 			
@@ -107,19 +107,19 @@ public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
         		TheKnowledgeBase = DefaultKnowledgeBase;
 			
 			p = Files.createTempFile(null, null);
-			Files.copy(stream, p, StandardCopyOption.REPLACE_EXISTING);
+			Files.copy(contextStream, p, StandardCopyOption.REPLACE_EXISTING);
 	        File contextFile = new File(p.toUri());
 			
 	        Context context = new Context(contextFile, TheKnowledgeBase);
 	        Agent = new Prudens(TheKnowledgeBase, context);
 	        
-	        if (!queryText.equals("metakbinfo(version)")) {
+	        if (!contextText.equals("metakbinfo(version)")) {
 				outln(TL, "Context:");
-				outln(TL, queryText);
+				outln(TL, contextText);
 	        }
 
 		} catch (IOException e) {
-			errln("Error querying version of Meta-level Knowledge Base: " + e.getMessage());
+			errln("Error inferring facts from Meta-level Knowledge Base: " + e.getMessage());
 			return 0;
 		}
 
@@ -132,12 +132,12 @@ public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
 	public String getKBVersion(String knowledgeBaseString) {
 		
 		String	metaKBVersion = "Prudens Default";
-		String	queryText = "metakbinfo(version)";
+		String	versionContext = "metakbinfo(version)";
 
     	try {
 
-    		if (checkSolution(queryText, knowledgeBaseString) == 0) {
-    			errln("Error querying version of Meta-level Knowledge Base: Cannot access Knowledge Base!");
+    		if (inferFacts(versionContext, knowledgeBaseString) == 0) {
+    			errln("Error inferring version of Meta-level Knowledge Base: Cannot access Knowledge Base!");
             	metaKBVersion = "Prudens Default";
     		}
 
@@ -163,7 +163,7 @@ public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
         }
 
     	catch (Exception e) {
-	       	errln("Error querying version of Meta-level Knowledge Base. Version not found or cannot access KB!");
+	       	errln("Error inferring version of Meta-level Knowledge Base. Version not found or cannot access KB!");
 	       	errln(e.getMessage());
 	       	metaKBVersion = "Prudens Default";   
 	    }
@@ -175,22 +175,22 @@ public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
 
         
         
-	public void runExtractionQueryOnKB(String knowledgeBaseString, NLRGQuery nlrgQueryToRun, NLRGRule extractedRule) throws NLRGMetaKBException {
+	public void runSentenceContext(String knowledgeBaseString, NLRGContext sentenceContextGneric, NLRGRule extractedRule) throws NLRGMetaKBException {
 
-		PrudensQuery queryToRun = (PrudensQuery) nlrgQueryToRun;
+		PrudensContext sentenceContext = (PrudensContext) sentenceContextGneric;
 		
-		if (!queryToRun.isQueryReady()) {
-    		errln("Error querying Meta-level Knowledge Base: Query is not ready!");
-        	throw new NLRGMetaKBException("Error querying Meta-level Knowledge Base: Query is not ready!");
+		if (!sentenceContext.isContextReady()) {
+    		errln("Error inferring from Meta-level Knowledge Base: Context is not ready!");
+        	throw new NLRGMetaKBException("Error inferring from Meta-level Knowledge Base: Context is not ready!");
 		}
 
 		else {
 			
-			String	queryText = queryToRun.getQueryTextData();
+			String	sentenceContextText = sentenceContext.getContextTextData();
 
-        	if (checkSolution(queryText, knowledgeBaseString) == 0) {
-        		errln("Error querying Meta-level Knowledge Base!");
-            	throw new NLRGMetaKBException("Error querying Meta-level Knowledge Base!");
+        	if (inferFacts(sentenceContextText, knowledgeBaseString) == 0) {
+        		errln("Error inferring from Meta-level Knowledge Base!");
+            	throw new NLRGMetaKBException("Error inferring from Meta-level Knowledge Base!");
 	    	}
 
         	else {
@@ -359,7 +359,7 @@ public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
 	        }
 		        
         	extractedRule.setComplete(true);
-        	outln(TL, "Meta-level Knowledge Base Successfully Queried");
+        	outln(TL, "Rule Successfully Extracted");
             outln(TL, "");		        
         }
 
