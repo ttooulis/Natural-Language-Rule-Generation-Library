@@ -3,6 +3,8 @@ package cy.ac.ouc.cognition.nlrg.lib;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.json.JSONPropertyIgnore;
+
 import static cy.ac.ouc.cognition.nlrg.lib.NLRGPredicate.RulePart;
 import static cy.ac.ouc.cognition.nlrg.lib.NLRGTrace.TL;
 import static cy.ac.ouc.cognition.nlrg.lib.NLRGTrace.outln;
@@ -13,11 +15,13 @@ public abstract class NLRGRule extends NLRGKnowledgeBaseElement {
 	protected HashMap<String, NLRGPredicate>	Head;
 	protected HashMap<String, NLRGPredicate>	Body;
 
+	protected String							RuleText;
+
 	protected int		CurrentPredicateIndex = 0;
 	protected boolean	Complete;
 	
 	protected boolean	Conflict = false;
-	
+
 
 	
 	NLRGRule() {
@@ -29,6 +33,7 @@ public abstract class NLRGRule extends NLRGKnowledgeBaseElement {
 		Name = new String(name);
 		Head = new HashMap<String, NLRGPredicate>();
 		Body = new HashMap<String, NLRGPredicate>();
+		RuleText = "";
 		Complete = false;
 	}
 	
@@ -91,10 +96,12 @@ public abstract class NLRGRule extends NLRGKnowledgeBaseElement {
 	public int addPredicateWithArgumentsFromLists(
 			ArrayList<String> predicateIdentifier,
 			ArrayList<String> argumentIdentifiers,
-			RulePart predicateRulePart) {
+			RulePart predicateRulePart,
+			ArrayList<NLRGDisplayRuleNode> displayRuleList) {
 
 
 		NLRGPredicate predicate = new NLRGPredicate();
+		predicate.setDisplayRuleList(displayRuleList);
 		
 		/* If new predicate is not empty proceed to create relevant argument object list and add it to predicate */	
 		predicate.setName(predicateIdentifier);
@@ -106,7 +113,7 @@ public abstract class NLRGRule extends NLRGKnowledgeBaseElement {
 			
 			predicate.setArguments(arguments);
 
-			/* If new predicate with the same argumentsis  not already added to the rule
+			/* If new predicate with the same arguments is  not already added to the rule
 			 * proceed to add it to the respective part of the rule
 			 */	
 			if (!this.containsPredicateWithArguments(predicate, predicateRulePart, true)) {
@@ -242,17 +249,77 @@ public abstract class NLRGRule extends NLRGKnowledgeBaseElement {
 
 
 	
-	public String generateRuleText() {
+	protected void generateRuleText() {
 
-		return toString();
+		RuleText = this.toString();
 	  
 	}
 
 
 
 	/**
+	 * @return the name
+	 */
+	public String getName() {
+		return Name;
+	}
+
+
+	/**
+	 * @param name the name to set
+	 */
+	@JSONPropertyIgnore
+	public void setName(String name) {
+		Name = name;
+	}
+
+
+	/**
+	 * @return the head
+	 */
+	public HashMap<String, NLRGPredicate> getHead() {
+		return Head;
+	}
+
+
+	/**
+	 * @param head the head to set
+	 */
+	@JSONPropertyIgnore
+	public void setHead(HashMap<String, NLRGPredicate> head) {
+		Head = head;
+	}
+
+
+	/**
+	 * @return the body
+	 */
+	public HashMap<String, NLRGPredicate> getBody() {
+		return Body;
+	}
+
+
+	/**
+	 * @param body the body to set
+	 */
+	@JSONPropertyIgnore
+	public void setBody(HashMap<String, NLRGPredicate> body) {
+		Body = body;
+	}
+
+
+	/**
+	 * @return the ruleText
+	 */
+	public String getRuleText() {
+		return RuleText;
+	}
+
+
+	/**
 	 * @return the complete
 	 */
+	@JSONPropertyIgnore
 	public  boolean isComplete() {
 		return Complete;
 	}
@@ -262,10 +329,13 @@ public abstract class NLRGRule extends NLRGKnowledgeBaseElement {
 	/**
 	 * @@param complete the complete to set
 	 */
+	@JSONPropertyIgnore
 	public void setComplete(boolean complete) {
 		Complete = complete;
-		if (Complete)
+		if (Complete) {
+			this.generateRuleText();
 			outln(TL, "Rule Generation Completed = [" + this.toString() +"]");
+		}
 
 	}
 	
@@ -284,6 +354,7 @@ public abstract class NLRGRule extends NLRGKnowledgeBaseElement {
 	/**
 	 * @param the conflict to set
 	 */
+	@JSONPropertyIgnore
 	public void setConflict(boolean conflict) {
 		Conflict = conflict;
 	}

@@ -4,11 +4,14 @@ import java.util.List;
 
 public abstract class NLRGContext extends NLRGKnowledgeBaseElement {
 	
+	protected String ContextText;
+	
 	protected boolean ContextReady;
 	
 
 
 	NLRGContext() {
+		ContextText = "";
 		ContextReady = false;
 	}
 

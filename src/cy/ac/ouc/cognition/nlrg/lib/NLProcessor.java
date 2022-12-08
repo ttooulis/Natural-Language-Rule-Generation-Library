@@ -1,5 +1,6 @@
 package cy.ac.ouc.cognition.nlrg.lib;
 
+import static cy.ac.ouc.cognition.nlrg.lib.NLRGTrace.errln;
 
 public abstract class NLProcessor extends NLRGThing {
 	
@@ -7,11 +8,9 @@ public abstract class NLProcessor extends NLRGThing {
 	protected boolean	NLProcessorLoaded;
 
 
-	
 	NLProcessor() {
 		DocumentAnnotated = false;
 		NLProcessorLoaded = false;
-
 	}
 	
 	NLProcessor(boolean load) {
@@ -30,8 +29,8 @@ public abstract class NLProcessor extends NLRGThing {
 		
 	}
 
-	public String generateParseData() {
-		
+	public String generateParseData(NLDocument nlDocument) {
+		errln("Error generating Parse Data: Cannot generate Parse Data from a generic class!");
 		return "";
 	}
 	
@@ -52,5 +51,6 @@ public abstract class NLProcessor extends NLRGThing {
 	public boolean isAnnotated( ) {
 		return DocumentAnnotated;
 	}
+
 
 }

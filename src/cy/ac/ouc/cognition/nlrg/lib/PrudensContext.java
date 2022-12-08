@@ -2,12 +2,12 @@ package cy.ac.ouc.cognition.nlrg.lib;
 
 import java.util.List;
 
+import org.json.JSONPropertyIgnore;
+
 public class PrudensContext extends NLRGContext {
 
 	private static String 		ls = NLRGParameterLib.NLRGThing_LineSeperator;
 
-	private String ContextText;
-	
 	public void BuildContext(List<NLPredicate> SentencePredicates) {
 
 		/*
@@ -18,7 +18,7 @@ public class PrudensContext extends NLRGContext {
 
 		for (NLPredicate nlpredicate : SentencePredicates) {
 				String contextString = nlpredicate.toString();
-				if (!contextString.isEmpty())
+				if (contextString != null && !contextString.isEmpty())
 					ContextText += contextString + ";" + ls;
 		}
 
@@ -28,6 +28,7 @@ public class PrudensContext extends NLRGContext {
 	
 	
 	
+	@JSONPropertyIgnore
 	public String getContextTextData() {
 
 		String ContextTextData = "";

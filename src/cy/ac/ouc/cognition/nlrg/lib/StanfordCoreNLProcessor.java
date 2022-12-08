@@ -2,21 +2,33 @@ package cy.ac.ouc.cognition.nlrg.lib;
 
 
 import java.util.*;
+
 import edu.stanford.nlp.ling.*;
 import edu.stanford.nlp.pipeline.*;
 import edu.stanford.nlp.semgraph.*;
 import edu.stanford.nlp.trees.*;
+
+import static cy.ac.ouc.cognition.nlrg.lib.NLRGTrace.errln;
 import static cy.ac.ouc.cognition.nlrg.lib.NLRGTrace.outln;
 
 
 public class StanfordCoreNLProcessor extends NLProcessor {
 
-    private static Properties		CoreNLPProperties;
-	private static StanfordCoreNLP	CoreNLPPipeline;
-	private CoreDocument			CoreNLPDocument;
+    private static	Properties			CoreNLPProperties;
+	private static	StanfordCoreNLP		CoreNLPPipeline;
+	private 		CoreDocument		CoreNLPDocument;
 	
 
 
+	StanfordCoreNLProcessor() {
+		super();
+	}
+	
+	StanfordCoreNLProcessor(boolean load) {
+		super(load);
+	}
+
+	
 	public void load() {
 		
 		/*
@@ -67,30 +79,32 @@ public class StanfordCoreNLProcessor extends NLProcessor {
 		
 		NLDocument nlDocument = new NLDocument(nlText);
 
-		for (CoreSentence CoreNLPSentence : CoreNLPDocument.sentences()) {
+		for (CoreSentence coreNLPSentence : CoreNLPDocument.sentences()) {
 			
-			NLSentence  nlSentence = new NLSentence(CoreNLPSentence.text());
+			NLSentence  nlSentence = new NLSentence(coreNLPSentence.text());
+			nlSentence.setNLPData(coreNLPSentence);
+
 			// CID - MAYBE RETHINK "ROOT" TOKEN AND DEPENDENCY
 			nlSentence.addToken(0, "root", "root", "O", "ROOT");
 
 			/* Get Token Information */
-			for (CoreLabel CoreNLPToken : CoreNLPSentence.tokens()) {
+			for (CoreLabel coreNLPToken : coreNLPSentence.tokens()) {
 
-				String lemma = CoreNLPToken.lemma();
+				String lemma = coreNLPToken.lemma();
 				if (lemma == null)
-					lemma = CoreNLPToken.originalText();
+					lemma = coreNLPToken.originalText();
 
 				/* In case NER annotator is not loaded set to default value */
-				String nerTag = CoreNLPToken.ner();
+				String nerTag = coreNLPToken.ner();
 				if (nerTag == null)
 					nerTag = "O";
 
-				String tag = CoreNLPToken.tag();
+				String tag = coreNLPToken.tag();
 				if (tag == null)
 					tag = "UNKN";
 
-				nlSentence.addToken(	CoreNLPToken.index(),
-										CoreNLPToken.originalText(),
+				nlSentence.addToken(	coreNLPToken.index(),
+										coreNLPToken.originalText(),
 										lemma,
 										nerTag,
 										tag
@@ -102,7 +116,7 @@ public class StanfordCoreNLProcessor extends NLProcessor {
 			/* CID - Find a way to make a better check! */
 			if (CoreNLPProperties.toString().contains("depparse")) {
 				/* Get Dependency Information */
-				SemanticGraph dependencyParse = CoreNLPSentence.dependencyParse();
+				SemanticGraph dependencyParse = coreNLPSentence.dependencyParse();
 	
 				IndexedWord root = dependencyParse.getFirstRoot();
 
@@ -132,7 +146,7 @@ public class StanfordCoreNLProcessor extends NLProcessor {
 	
 	
 	/* CID - PORTED AS IS FROM PREVIOUS VERSION. NEEDS TO BE TAKEN CARE!! */
-	public String generateParseData() {
+	public String generateParseData(NLDocument nlDocument) {
 
 		/*
 		 * *******************************************
@@ -148,16 +162,21 @@ public class StanfordCoreNLProcessor extends NLProcessor {
 			ParseDataText += "Document Sentences:" + ls;
 			ParseDataText += "-------------------" + ls + ls;
 	
-			int count = 0;
-			for (CoreSentence sentence : CoreNLPDocument.sentences()) {
+			for (NLSentence nlSentence : nlDocument.getDocumentSentences()) {
+				
+				CoreSentence coreNLPSentence;
+				if (!(nlSentence.getNLPData() instanceof CoreSentence)) {
+					errln("Error generating Parse Data in Sentence " + nlSentence.getIndexInDocument());
+					continue;
+				}
+				coreNLPSentence = (CoreSentence) nlSentence.getNLPData();
 		
-				count++;
-				String sentenceText = sentence.text();
-				ParseDataText += "Sentence " + count + " : " + sentenceText + ls;
+				String sentenceText = nlSentence.getText();
+				ParseDataText += "Sentence " + nlSentence.getIndexInDocument() + " : " + sentenceText + ls;
 			
 				// Print sentence tokens
 				ParseDataText += "Tokens: " + ls;
-				for (CoreLabel token : sentence.tokens()) {
+				for (CoreLabel token : coreNLPSentence.tokens()) {
 
 					ParseDataText += "Category:\t\t" + token.category() + ls;
 					ParseDataText += "index:\t\t" + token.index() + ls;
@@ -178,7 +197,7 @@ public class StanfordCoreNLProcessor extends NLProcessor {
 				if (CoreNLPProperties.toString().contains("depparse")) {
 					// Print dependency parse for the sentence
 					ParseDataText += "Dependency Parse:" + ls;
-					SemanticGraph dependencyParse = sentence.dependencyParse();
+					SemanticGraph dependencyParse = coreNLPSentence.dependencyParse();
 					ParseDataText += dependencyParse + ls;
 					ParseDataText += "Dependency Parse (CompactString):" + ls;
 					ParseDataText += dependencyParse.toCompactString() + ls;
@@ -229,25 +248,25 @@ public class StanfordCoreNLProcessor extends NLProcessor {
 	
 				// Print the list of the part-of-speech tags for the sentence
 				ParseDataText += "List of the part-of-speech tags: ";
-				List<String> posTags = sentence.posTags();
+				List<String> posTags = coreNLPSentence.posTags();
 				ParseDataText += posTags + ls + ls;
 				
 				/* Annotators ner and lemma required! */
 				// Print the list of the ner tags for the sentence
 				ParseDataText += "List of the ner tags: ";
-				List<String> nerTags = sentence.nerTags();
+				List<String> nerTags = coreNLPSentence.nerTags();
 				ParseDataText += nerTags + ls + ls;
 	
 			
 				// Print constituency parse for the sentence
 				ParseDataText += "Constituency parse: ";
-				Tree constituencyParse = sentence.constituencyParse();
+				Tree constituencyParse = coreNLPSentence.constituencyParse();
 				ParseDataText += constituencyParse + ls + ls;
 			
 				/* Annotators ner and lemma required! */
 			    // Print entity mentions in the sentence
 				ParseDataText += "Entity mentions: ";
-				List<CoreEntityMention> entityMentions = sentence.entityMentions();
+				List<CoreEntityMention> entityMentions = coreNLPSentence.entityMentions();
 				ParseDataText += entityMentions + ls + ls;
 	
 				
@@ -255,7 +274,7 @@ public class StanfordCoreNLProcessor extends NLProcessor {
 				 * CAUSES OUT OF MEMORY ERROR. NOT TRIED!
 			    // Print coreference between entity mentions
 			    ParseDataText += "Coreference between entity mentions: ";
-				for (CoreEntityMention originalEntityMention : sentence.entityMentions()) {
+				for (CoreEntityMention originalEntityMention : coreNLPSentence.entityMentions()) {
 					ParseDataText += "[" + originalEntityMention + " ";
 					ParseDataText += originalEntityMention.canonicalEntityMention().get() + " ]";
 				}

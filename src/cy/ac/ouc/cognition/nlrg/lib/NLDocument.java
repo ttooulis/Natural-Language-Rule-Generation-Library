@@ -5,6 +5,7 @@ import java.util.List;
 
 public class NLDocument extends NLThing {
 
+	private int					CurrentSentenceIndex = 0;
 	private List<NLSentence>	DocumentSentences;
 	
 	
@@ -17,6 +18,8 @@ public class NLDocument extends NLThing {
 	
 	
 	public void addSentence(NLSentence sentence) {
+		CurrentSentenceIndex++;
+		sentence.setIndexInDocument(CurrentSentenceIndex);
 		DocumentSentences.add(sentence);
 		Complete = false;
 	}

@@ -3,30 +3,34 @@ package cy.ac.ouc.cognition.nlrg.lib;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONPropertyIgnore;
+
 public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 
 	static enum RulePart {
 		HEAD, BODY, UNDEFINED;
 	}
 	
-	protected	List<String>				Name;
-	protected	List<NLRGPredicateArgument>	Arguments;
-	protected	boolean						Generate;
+	protected	List<String>					Name;
+	protected	List<NLRGPredicateArgument>		Arguments;
+	protected	boolean							Generate;
 
+	private String								PredicateText;
+	private	ArrayList<NLRGDisplayRuleNode>		MarkedRulesChain;
 
 
 	public NLRGPredicate() {
-		Name = new ArrayList<String>();
-		Arguments = new ArrayList<NLRGPredicateArgument>();
-		Generate = true;
+		this("", true);
 	}
 	
 
 	
 	public NLRGPredicate(String name, boolean generate) {
 		Name = new ArrayList<String>();
-		Name.add(new String(name));
+		if (!name.isEmpty())
+			Name.add(new String(name));
 		Arguments = new ArrayList<NLRGPredicateArgument>();
+		PredicateText = "";
 		Generate = generate;
 	}
 	
@@ -34,6 +38,7 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 	
 	public NLRGPredicate(List<String> name, boolean generate) {
 		Name = name;
+		PredicateText = "";
 		Generate = generate;
 	}
 	
@@ -43,6 +48,7 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 		Name = new ArrayList<String>();
 		Name.add(new String(name));
 		Arguments = arguments;
+		PredicateText = "";
 		Generate = generate;
 	}
 	
@@ -51,6 +57,7 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 	public NLRGPredicate(List<String> name, List<NLRGPredicateArgument> arguments, boolean generate) {
 		Name = name;
 		Arguments = arguments;
+		PredicateText = "";
 		Generate = generate;
 	}
 	
@@ -59,6 +66,7 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 	/**
 	 * @return the name
 	 */
+	@JSONPropertyIgnore
 	public List<String> getName() {
 		return Name;
 	}
@@ -66,6 +74,7 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 	/**
 	 * @param name the name to set
 	 */
+	@JSONPropertyIgnore
 	public void setName(List<String> name) {
 		Name = name;
 	}
@@ -73,6 +82,7 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 	/**
 	 * @param name the name to set
 	 */
+	@JSONPropertyIgnore
 	public void setName(String name) {
 		Name.add(new String(name));
 	}
@@ -140,15 +150,25 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 
 	
 	/**
+	 * @return the predicateText
+	 */
+	public String getPredicateText() {
+		return PredicateText;
+	}
+
+
+	/**
 	 * @return the arguments
 	 */
 	public List<NLRGPredicateArgument> getArguments() {
 		return Arguments;
 	}
 
+
 	/**
 	 * @param arguments the arguments to set
 	 */
+	@JSONPropertyIgnore
 	public void setArguments(List<NLRGPredicateArgument> arguments) {
 		Arguments = arguments;
 	}
@@ -160,6 +180,7 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 	/**
 	 * @return Generate flag
 	 */
+	@JSONPropertyIgnore
 	public boolean getGenerate() {
 		return Generate;
 	}
@@ -167,13 +188,32 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 	/**
 	 * @param Generate flag
 	 */
+	@JSONPropertyIgnore
 	public void setGenerate(boolean generate) {
 		Generate = generate;
 	}
 
 
 
-    public static String buildPredicateText(List<String> name, List<NLRGPredicateArgument> arguments, boolean ignoreNegation) {
+    /**
+	 * @return the markedRulesChain
+	 */
+	public ArrayList<NLRGDisplayRuleNode> getMarkedRulesChain() {
+		return MarkedRulesChain;
+	}
+
+
+
+	/**
+	 * @param markedRulesChain the markedRulesChain to set
+	 */
+	public void setDisplayRuleList(ArrayList<NLRGDisplayRuleNode> markedRulesChain) {
+		MarkedRulesChain = markedRulesChain;
+	}
+
+
+
+	public static String buildPredicateText(List<String> name, List<NLRGPredicateArgument> arguments, boolean ignoreNegation) {
     	
     	String predicateString = "";
 
@@ -231,9 +271,12 @@ public class NLRGPredicate extends NLRGKnowledgeBaseElement {
 	
 	
     public String toString(boolean ignoreNegation) {
-    	if (Generate)
-    		return buildPredicateText(this, false);
+    	if (Generate) {
+    	    PredicateText = buildPredicateText(this, false);
+    	    return PredicateText;
+    	}
     	
+    	PredicateText = "";
     	return "";
     }
 

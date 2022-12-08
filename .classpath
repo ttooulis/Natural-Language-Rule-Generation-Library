@@ -9,5 +9,6 @@
 	<classpathentry kind="lib" path="C:/Program Files/stanford-corenlp-full-3.9.1/stanford-corenlp-3.9.1.jar"/>
 	<classpathentry kind="lib" path="C:/Program Files/stanford-corenlp-full-3.9.1/stanford-corenlp-3.9.1-models.jar"/>
 	<classpathentry kind="lib" path="C:/git/repository/NESTOR Project Workspace - Prudens/lib/prudensApp.jar"/>
+	<classpathentry kind="lib" path="C:/git/repository/NESTOR Project Workspace - Prudens/lib/json-20220924.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

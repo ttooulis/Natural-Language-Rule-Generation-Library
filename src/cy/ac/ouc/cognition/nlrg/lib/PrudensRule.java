@@ -7,7 +7,6 @@ import cy.ac.ouc.cognition.nlrg.lib.NLRGPredicate.RulePart;
 public class PrudensRule extends NLRGRule {
 
 
-	
 	public PrudensRule() {
 		this("");
 	}
@@ -47,7 +46,7 @@ public class PrudensRule extends NLRGRule {
 
 
 	
-    public String generateRuleText() {
+    protected void generateRuleText() {
 
     	String ruleText = "";
     	
@@ -71,9 +70,9 @@ public class PrudensRule extends NLRGRule {
 
     	}
 
-	    return ruleText;
-	    
-	} 
+		RuleText = ruleText;
+
+    } 
 
 	  
 

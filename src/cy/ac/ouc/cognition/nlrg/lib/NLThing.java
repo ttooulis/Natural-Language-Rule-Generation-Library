@@ -1,5 +1,7 @@
 package cy.ac.ouc.cognition.nlrg.lib;
 
+import org.json.JSONPropertyIgnore;
+
 public abstract class NLThing extends NLRGThing {
 
 	protected String	Text;
@@ -34,6 +36,7 @@ public abstract class NLThing extends NLRGThing {
 	/**
 	 * @return the complete
 	 */
+	@JSONPropertyIgnore
 	public  boolean isComplete() {
 		return Complete;
 	}
@@ -43,6 +46,7 @@ public abstract class NLThing extends NLRGThing {
 	/**
 	 * @@param complete the complete to set
 	 */
+	@JSONPropertyIgnore
 	public void setComplete(boolean complete) {
 		Complete = complete;
 	}

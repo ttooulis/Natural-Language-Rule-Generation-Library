@@ -2,6 +2,8 @@ package cy.ac.ouc.cognition.nlrg.lib;
 
 import java.util.List;
 
+import org.json.JSONPropertyIgnore;
+
 
 public class NLPredicate extends NLRGPredicate {
 
@@ -67,6 +69,7 @@ public class NLPredicate extends NLRGPredicate {
 	/**
 	 * @param type the type to set
 	 */
+	@JSONPropertyIgnore
 	public void setType(RelationType type) {
 		Type = type;
 	}

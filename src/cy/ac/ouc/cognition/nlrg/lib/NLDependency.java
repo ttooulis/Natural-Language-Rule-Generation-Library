@@ -1,5 +1,6 @@
 package cy.ac.ouc.cognition.nlrg.lib;
 
+import org.json.JSONPropertyIgnore;
 
 public class NLDependency extends NLThing {
 	
@@ -46,6 +47,7 @@ public class NLDependency extends NLThing {
 	/**
 	 * @return the governor
 	 */
+	@JSONPropertyIgnore
 	public NLToken getGovernor() {
 		return Governor;
 	}
@@ -53,6 +55,7 @@ public class NLDependency extends NLThing {
 	/**
 	 * @param governor the governor to set
 	 */
+	@JSONPropertyIgnore
 	public void setGovernor(NLToken governor) {
 		Governor = governor;
 		Complete = false;

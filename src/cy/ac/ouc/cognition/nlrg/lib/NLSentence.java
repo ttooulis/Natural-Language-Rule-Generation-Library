@@ -2,23 +2,38 @@ package cy.ac.ouc.cognition.nlrg.lib;
 
 import java.util.ArrayList;
 import java.util.List;
+
+//import org.json.JSONObject;
+import org.json.JSONPropertyIgnore;
+
 import java.util.HashMap;
 
 public class NLSentence extends NLThing {
 
+	private int								IndexInDocument;
+
+	private Object							NLPData;
+	
 	private HashMap<Integer, NLToken>		Tokens;
 	private List<NLDependency>				Dependencies;
 	private List<NLPredicate>				Predicates;
 	private	NLRGContext						Context;
 	private NLRGRule						ExtractedRule;
+	private NLRGDeduction					RuleDeduction;
 	
 	boolean									PredicatesGenerated = false;
 	boolean									ContextBuilt = false;
 	boolean									RuleSet = false;
+	boolean									MarkedMetaRulesSet = false;
 	
 	
 	NLSentence(String sentenceText) {
+		this(sentenceText, 0);
+	}
+	
+	NLSentence(String sentenceText, int indexInDocument) {
 		super(sentenceText);
+		IndexInDocument = indexInDocument;
 		Tokens = new HashMap<Integer, NLToken>();
 		Dependencies = new ArrayList<>();
 		Predicates = new ArrayList<>();
@@ -32,6 +47,7 @@ public class NLSentence extends NLThing {
 		ContextBuilt = false;
 		RuleSet = false;
 		Complete = false;
+		MarkedMetaRulesSet = false;
 	}
 	
 	public void addToken(int index, String originalText, String lemma, String ner, String tag) {
@@ -41,31 +57,33 @@ public class NLSentence extends NLThing {
 
 	
 	public void addDependency(NLDependency dependency) {
+		// Add this dependency relation in the list of dependencies for this sentence
 		Dependencies.add(dependency);
+
+		// Create a dependency relation tree between tokens
+		dependency.getGovernor().addDependant(dependency.getDependencyName(), dependency.getDependent());
+
 		PredicatesGenerated = false;
 		ContextBuilt = false;
 		RuleSet = false;
 		Complete = false;
+		MarkedMetaRulesSet = false;
+
 	}
 	
-	// CID - There could be inconsistency here
 	public void addDependency(String dependencyName, NLToken governor, NLToken dependent) {
 		this.addDependency(new NLDependency(	dependencyName,
-				governor,
-				dependent)
-			);
+												governor,
+												dependent));
 	}
 	
 	public void addDependency(String dependencyName, int governorIndex, int dependentIndex) {
-		this.addDependency(new NLDependency(	dependencyName,
-												Tokens.get(governorIndex),
-												Tokens.get(dependentIndex))
-											);
+		this.addDependency(dependencyName, Tokens.get(governorIndex), Tokens.get(dependentIndex));
 	}
 	
 	
 	
-	public void generatePredicates() {
+	public void generateMetaPredicates() {
 		
 		if (Complete) {
 
@@ -132,7 +150,6 @@ public class NLSentence extends NLThing {
 			/* Add Dependency predicates */
 			// % CID - 02/08/2020 - Use Lemma instead of value of a word. This will give us the root of the word
 			// % and no other processing will probably be required.
-			// % For the "TO BE" verb, some Meta-Rules need to be changed 
 			for (NLDependency nlDependency : Dependencies) {
 
 				boolean generatePredicate = true;
@@ -179,22 +196,67 @@ public class NLSentence extends NLThing {
 	}
 
 	
-	
+	@JSONPropertyIgnore
 	public boolean isContextBuilt( ) {
 		return ContextBuilt;
 	}
 
 
 	
-	public void setRule(NLRGRule extractedRule) {
+	/**
+	 * @return the indexInDocument
+	 */
+	public int getIndexInDocument() {
+		return IndexInDocument;
+	}
+
+
+
+	/**
+	 * @param indexInDocument the indexInDocument to set
+	 */
+	@JSONPropertyIgnore
+	public void setIndexInDocument(int indexInDocument) {
+		IndexInDocument = indexInDocument;
+	}
+
+
+
+	/**
+	 * @return the NLPData
+	 */
+	@JSONPropertyIgnore
+	public Object getNLPData() {
+		return NLPData;
+	}
+
+	/**
+	 * @param NLPData the NLPData to set
+	 */
+	@JSONPropertyIgnore
+	public void setNLPData(Object nlpData) {
+		NLPData = nlpData;
+	}
+
+	
+	
+	/**
+	 * @param extractedRule the extractedRule to set
+	 */
+	@JSONPropertyIgnore
+	public void setExtractedRule(NLRGRule extractedRule) {
 		ExtractedRule = extractedRule;
 		RuleSet = true;
 	}
 
-	public NLRGRule getRule() {
+	/**
+	 * @return the extractedRule
+	 */
+	public NLRGRule getExtractedRule() {
 		return ExtractedRule;
 	}
 
+	@JSONPropertyIgnore
 	public boolean isRuleSet( ) {
 		return RuleSet;
 	}
@@ -213,6 +275,7 @@ public class NLSentence extends NLThing {
 	/**
 	 * @return the dependencies
 	 */
+	@JSONPropertyIgnore
 	public List<NLDependency> getDependencies() {
 		return Dependencies;
 	}
@@ -234,5 +297,30 @@ public class NLSentence extends NLThing {
 	public NLRGContext getContext() {
 		return Context;
 	}
+
+
+
+	/**
+	 * @return the ruleDeduction
+	 */
+	public NLRGDeduction getRuleDeduction() {
+		return RuleDeduction;
+	}
+
+	/**
+	 * @param ruleDeduction the ruleDeduction to set
+	 */
+	@JSONPropertyIgnore
+	public void setRuleDeduction(NLRGDeduction ruleDeduction) {
+		RuleDeduction = ruleDeduction;
+	}
+
+//    public String toJSONString() {
+//    	
+//		return new JSONObject(this).toString();
+//
+//    }
+
+	
 
 }

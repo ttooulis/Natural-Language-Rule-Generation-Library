@@ -19,6 +19,11 @@ public class NLRGParameterLib extends NLRGParameter {
 	 * MetaKnowledgeBase Parameters
 	 ********************************/
 	public static int NLRGMetaKB_PredicateMode = 0;
+	public static String NLRGMetaKB_ExtractionMetaPredicate = "ruleterms";
+	public static String NLRGMetaKB_ArgumentSeparator = "args";
+	public static String NLRGMetaKB_PredicateSeparator = "next";
+	public static String NLRGMetaKB_VarPlaceholder = "vph-";
+	public static int NLRGMetaKB_MaximumLayers = 100;
 
 	
 	
@@ -32,6 +37,7 @@ public class NLRGParameterLib extends NLRGParameter {
 	public static String NLRGRule_ConflictNeckSymbol = "#";
 	public static int NLRGRule_GenerateName = 1;
 	public static String NLRGRule_NameSeperator = "::";
+	public static String NLRGRule_VariableName = "X";
 
 
 
@@ -70,6 +76,12 @@ public class NLRGParameterLib extends NLRGParameter {
 
 
 		NLRGMetaKB_PredicateMode = ReadIntParameterTrace("MetaPredicateMode", 0);
+		NLRGMetaKB_ExtractionMetaPredicate = ReadParameterTrace("ExtractionMetaPredicate", "ruleterms");
+		NLRGMetaKB_ArgumentSeparator = ReadParameterTrace("ArgumentSeparator", "args");
+		NLRGMetaKB_PredicateSeparator = ReadParameterTrace("PredicateSeparator", "next");
+		NLRGMetaKB_VarPlaceholder = ReadParameterTrace("VarPlaceholder", "vph-");
+		NLRGMetaKB_MaximumLayers = ReadIntParameterTrace("MaximumLevel", 100);
+
 		
 		NLRGRule_PredNameConcatChar = ReadParameterTrace("PredicateNameConcatChar", "");
 		NLRGRule_PredNameCapitalize = ReadIntParameterTrace("PredicateNameCapitalize", 1);
@@ -78,6 +90,7 @@ public class NLRGParameterLib extends NLRGParameter {
 		NLRGRule_ConflictNeckSymbol = ReadParameterTrace("ConflictNeckSymbol", "#");
 		NLRGRule_GenerateName = ReadIntParameterTrace("GenerateName", 1);
 		NLRGRule_NameSeperator = ReadParameterTrace("NameSeperator", "::");
+		NLRGRule_VariableName = ReadParameterTrace("VariableName", "X");
 
 
 		StanfordCoreNLProcessor_Annotators = ReadParameter("Annotators", "tokenize, ssplit, pos, depparse, lemma, ner");

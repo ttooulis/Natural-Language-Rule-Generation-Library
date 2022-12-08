@@ -123,17 +123,9 @@ public class NLRGPipeline extends NLRGThing {
 
 	public String getMetaKnowledgeBaseText() {
 
-		if (MetaKnowledgeBaseSet) {
+		if (MetaKnowledgeBaseSet)
+			return MetaKnowledgeBase.getKBText();
 
-			if (NLRGParameterLib.NLRGPipeline_KnowledgeBaseType == "prudens")
-
-				return ((PrudensKnowledgeBase) MetaKnowledgeBase).getKBText();
-
-			else {
-				outln(TL, "Meta-Knowledge Base Content cannot be retrieved for this type of Knowledge Base");
-				return "";
-			}
-		}
 		else {
 			errln("Cannot retreive Meta-Knowledge Base File (" + NLRGParameterLib.NLRGPipeline_MetaKnowledgeBaseFile + "). NLRGKnowledgeBase Object not set");
 			return "";
@@ -172,7 +164,7 @@ public class NLRGPipeline extends NLRGThing {
 	public String getParseData() {
 
 		if (NLProcessorSet && NLDocumentProcessor.isAnnotated())
-			return NLDocumentProcessor.generateParseData();
+			return NLDocumentProcessor.generateParseData(ProcessedDocument);
 
 		else
         	errln("Cannot get NLP data. " + NLRGParameterLib.NLRGPipeline_NLProcessor + " NL processor not set or document not annotated!");
@@ -187,7 +179,7 @@ public class NLRGPipeline extends NLRGThing {
 		
 		if (ProcessedDocument != null && ProcessedDocument.isComplete())
 			for (NLSentence nlSentence : ProcessedDocument.getDocumentSentences())
-				nlSentence.generatePredicates();
+				nlSentence.generateMetaPredicates();
 		else
         	errln("Cannot generate meta-predicates. Document processing not completed!");
 
@@ -207,11 +199,9 @@ public class NLRGPipeline extends NLRGThing {
 
 		if (ProcessedDocument != null && ProcessedDocument.isComplete()) {
 
-			int count = 0;
 			for (NLSentence nlSentence : ProcessedDocument.getDocumentSentences()) {
 			
-				count++;
-				metaPredicateText += "Sentence " + count + " : " + nlSentence.getText() + ls;
+				metaPredicateText += "Sentence " + nlSentence.getIndexInDocument() + " : " + nlSentence.getText() + ls;
 				metaPredicateText += "************************************************" + ls;
 
 				/* Create meta-predicate text */
@@ -267,11 +257,9 @@ public class NLRGPipeline extends NLRGThing {
 
 		if (ProcessedDocument != null && ProcessedDocument.isComplete()) {
 
-			int count = 0;
 			for (NLSentence nlSentence : ProcessedDocument.getDocumentSentences()) {
 			
-				count++;
-				sentencesContextText += "Sentence " + count + " : " + nlSentence.getText() + ls;
+				sentencesContextText += "Sentence " + nlSentence.getIndexInDocument() + " : " + nlSentence.getText() + ls;
 				sentencesContextText += "************************************************" + ls;
 
 				/* Create sentence context text */
@@ -292,39 +280,25 @@ public class NLRGPipeline extends NLRGThing {
 
 	
 	
-	// CID - Re-think Context and Predicate class hierarchy a little bit and how to generalize Knowledge Base types
 	public void extractRules(String metaKnoweldgeBaseString) {
 		
 		if (ProcessedDocument != null && ProcessedDocument.isComplete()) {
 
-			int i = 0;
 			for (NLSentence nlSentence : ProcessedDocument.getDocumentSentences()) {
 				
-				i++;
-
 				if (nlSentence.isContextBuilt()) {
 					
-					NLRGRule ruleToBeExtracted;
-					String	ruleName = "S" + String.format("%07d", i);
+					try {
 
-					if (NLRGParameterLib.NLRGPipeline_KnowledgeBaseType == "prudens") {
+						MetaKnowledgeBase.runSentenceContext(metaKnoweldgeBaseString, nlSentence);
+//						outln(TL, "nlSentence JSON");
+//						outln(TL, nlSentence.toJSONString());
 
-						ruleToBeExtracted = new PrudensRule(ruleName);
+					} catch (NLRGMetaKBException e) {
 
-						try {
-
-							MetaKnowledgeBase.runSentenceContext(metaKnoweldgeBaseString, nlSentence.getContext(), ruleToBeExtracted);
-							nlSentence.setRule(ruleToBeExtracted);
-
-						} catch (NLRGMetaKBException e) {
-							errln("Error running extraction context on KB: " + e.getMessage());
-						}
-						
+						errln("Error running extraction context on KB: " + e.getMessage());
 					}
-
-					else
-						errln(NLRGParameterLib.NLRGPipeline_MetaKBType + " type is not supported for meta-level Knowledge Base");
-					
+											
 				}
 				
 			}
@@ -347,7 +321,7 @@ public class NLRGPipeline extends NLRGThing {
 			for (NLSentence nlSentence : ProcessedDocument.getDocumentSentences())
 
 				if (nlSentence.isRuleSet()) 
-					extractedRulesText += nlSentence.getRule().generateRuleText() + ls;
+					extractedRulesText += nlSentence.getExtractedRule().getRuleText() + ls;
 
 		}
 
@@ -355,6 +329,92 @@ public class NLRGPipeline extends NLRGThing {
         	errln("Cannot build extracted rules. Document processing not completed!");
 
 		return extractedRulesText;
+
+	}
+	
+
+	
+	public String getMarkedRulesChainText() {
+		
+		String	markedRulesChainText = "";
+		
+		if (ProcessedDocument != null && ProcessedDocument.isComplete()) {
+
+			for (NLSentence nlSentence : ProcessedDocument.getDocumentSentences()) {
+
+				markedRulesChainText += "Sentence " + nlSentence.getIndexInDocument() + " : " + nlSentence.getText() + ls;
+				markedRulesChainText += "************************************************" + ls;
+
+				if (nlSentence.isRuleSet()) 
+					markedRulesChainText += nlSentence.getRuleDeduction().getMarkedRulesChainText() + ls;
+
+				else
+		        	errln("Cannot get marked rules chain. No rule generated yet!");
+			}
+		}
+
+		else
+        	errln("Cannot get marked rules chain. Document processing not completed!");
+
+		return markedRulesChainText;
+
+	}
+	
+
+	
+	public String getMarkedRulesText() {
+		
+		String	markedRulesText = "";
+		
+		if (ProcessedDocument != null && ProcessedDocument.isComplete()) {
+
+			for (NLSentence nlSentence : ProcessedDocument.getDocumentSentences()) {
+
+				markedRulesText += "Sentence " + nlSentence.getIndexInDocument() + " : " + nlSentence.getText() + ls;
+				markedRulesText += "************************************************" + ls;
+
+				if (nlSentence.isRuleSet()) 
+					markedRulesText += nlSentence.getRuleDeduction().getMarkedRulesText() + ls;
+
+				else
+		        	errln("Cannot get marked rules chain. No rule generated yet!");
+			}
+		}
+
+		else
+        	errln("Cannot get marked rules. Document processing not completed!");
+
+		return markedRulesText;
+
+	}
+	
+
+	
+	public String getAllExplanationText() {
+		
+		String	markedRulesText = "";
+		
+		if (ProcessedDocument != null && ProcessedDocument.isComplete()) {
+
+			for (NLSentence nlSentence : ProcessedDocument.getDocumentSentences()) {
+
+				markedRulesText += "Sentence " + nlSentence.getIndexInDocument() + " : " + nlSentence.getText() + ls;
+				markedRulesText += "************************************************" + ls;
+
+				if (nlSentence.isRuleSet()) {
+					markedRulesText += nlSentence.getRuleDeduction().getMarkedRulesChainText() + ls +ls;
+					markedRulesText += nlSentence.getRuleDeduction().getMarkedRulesText() + ls;
+				}
+
+				else
+		        	errln("Cannot get marked rules chain. No rule generated yet!");
+			}
+		}
+
+		else
+        	errln("Cannot get marked rules. Document processing not completed!");
+
+		return markedRulesText;
 
 	}
 	

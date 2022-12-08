@@ -22,7 +22,9 @@ import static cy.ac.ouc.cognition.nlrg.lib.NLRGPredicate.RulePart;
 
 public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
 
-    private String			KnowledgeBaseFilePath;
+	private static final int MAX_LAYERS = NLRGParameterLib.NLRGMetaKB_MaximumLayers;
+
+	private String			KnowledgeBaseFilePath;
     private KnowledgeBase	TheKnowledgeBase;
     private KnowledgeBase	DefaultKnowledgeBase;
     private Prudens			Agent;
@@ -35,6 +37,41 @@ public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
 
     
     
+    private int inferFacts(String contextText, String knowledgeBaseString) {
+
+		InputStream contextStream = new ByteArrayInputStream(contextText.getBytes());
+		Path p;
+		try {
+			
+			// If a Knowledge Base string is not passed, do not re-load default KB
+        	if (knowledgeBaseString != null && !knowledgeBaseString.equals(""))
+        		this.load(knowledgeBaseString);
+        	else
+        		TheKnowledgeBase = DefaultKnowledgeBase;
+			
+			p = Files.createTempFile(null, null);
+			Files.copy(contextStream, p, StandardCopyOption.REPLACE_EXISTING);
+	        File contextFile = new File(p.toUri());
+			
+	        Context context = new Context(contextFile, TheKnowledgeBase);
+	        Agent = new Prudens(TheKnowledgeBase, context);
+	        
+	        if (!contextText.equals("metakbinfo(version)")) {
+				outln(TL, "Context:");
+				outln(TL, contextText);
+	        }
+
+		} catch (IOException e) {
+			errln("Error inferring facts from Meta-level Knowledge Base: " + e.getMessage());
+			return 0;
+		}
+
+
+		return 1;
+	}
+
+	
+	
     public int load(String knowledgeBaseString) {
 
         File knowledgeBaseFile;
@@ -94,41 +131,6 @@ public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
 
 
 
-    public int inferFacts(String contextText, String knowledgeBaseString) {
-
-		InputStream contextStream = new ByteArrayInputStream(contextText.getBytes());
-		Path p;
-		try {
-			
-			// If a Knowledge Base string is not passed, do not re-load default KB
-        	if (knowledgeBaseString != null && !knowledgeBaseString.equals(""))
-        		this.load(knowledgeBaseString);
-        	else
-        		TheKnowledgeBase = DefaultKnowledgeBase;
-			
-			p = Files.createTempFile(null, null);
-			Files.copy(contextStream, p, StandardCopyOption.REPLACE_EXISTING);
-	        File contextFile = new File(p.toUri());
-			
-	        Context context = new Context(contextFile, TheKnowledgeBase);
-	        Agent = new Prudens(TheKnowledgeBase, context);
-	        
-	        if (!contextText.equals("metakbinfo(version)")) {
-				outln(TL, "Context:");
-				outln(TL, contextText);
-	        }
-
-		} catch (IOException e) {
-			errln("Error inferring facts from Meta-level Knowledge Base: " + e.getMessage());
-			return 0;
-		}
-
-
-		return 1;
-	}
-
-	
-	
 	public String getKBVersion(String knowledgeBaseString) {
 		
 		String	metaKBVersion = "Prudens Default";
@@ -175,194 +177,233 @@ public class PrudensKnowledgeBase extends NLRGKnowledgeBase {
 
         
         
-	public void runSentenceContext(String knowledgeBaseString, NLRGContext sentenceContextGneric, NLRGRule extractedRule) throws NLRGMetaKBException {
+	public void runSentenceContext(String knowledgeBaseString, NLSentence nlSentence) throws NLRGMetaKBException {
 
-		PrudensContext sentenceContext = (PrudensContext) sentenceContextGneric;
+		PrudensContext sentenceContext;
+		NLRGRule extractedRule;
+		PrudensDeduction ruleDeduction = new PrudensDeduction();
+
+		if (!(nlSentence.getContext() instanceof PrudensContext)) {
+    		errln("Error inferring from Meta-level Knowledge Base: Context object is invalid!");
+        	throw new NLRGMetaKBException("Error inferring from Meta-level Knowledge Base: Context object is invalid!");
+		}
+		sentenceContext = (PrudensContext) nlSentence.getContext();
+
 		
 		if (!sentenceContext.isContextReady()) {
     		errln("Error inferring from Meta-level Knowledge Base: Context is not ready!");
         	throw new NLRGMetaKBException("Error inferring from Meta-level Knowledge Base: Context is not ready!");
 		}
 
-		else {
-			
-			String	sentenceContextText = sentenceContext.getContextTextData();
+		
+    	if (inferFacts(sentenceContext.getContextTextData(), knowledgeBaseString) == 0) {
+    		errln("Error inferring from Meta-level Knowledge Base!");
+        	throw new NLRGMetaKBException("Error inferring from Meta-level Knowledge Base!");
+    	}
 
-        	if (inferFacts(sentenceContextText, knowledgeBaseString) == 0) {
-        		errln("Error inferring from Meta-level Knowledge Base!");
-            	throw new NLRGMetaKBException("Error inferring from Meta-level Knowledge Base!");
-	    	}
+    	// Sort Rules by priority as defined by Rule Name
+    	ArrayList<Rule> markedRules = Agent.getMarkedRules();
+    	markedRules.sort(Comparator.comparing(Rule::getName).reversed());
 
-        	else {
-	        	
-            	int metaRuleLayerId = 0;
-            	int metaRuleLayerRuleIndex[] = new int[1000];
-            	int metaRuleLayerPredicatesAdded[] = new int[1000];
-            	int metaRuleLayerVariableIndex[] = new int[1000];
-            	boolean isObjectRuleHead = true;
+    	// Save marked rules for sentence
+    	ruleDeduction.setPrudensMarkedRules(markedRules);
 
-	        	// Sort Rules by priority as defined by Rule Name
-	        	ArrayList<Rule> markedRules = Agent.getMarkedRules();
-	        	markedRules.sort(Comparator.comparing(Rule::getName));
-	        	
-            	for (Rule rule : markedRules) {
-		        	
-		        	// CID - 20210427 At the time being multiple words for a single term are not supported
-		        	// but the design is kept for compatibility with Prolog version and for future use
-	            	int position = 1;
-	            	int PredicateAdded = 0;
-	            	RulePart metaRuleMode = RulePart.UNDEFINED;
-		            String ruleHeadPredicateName = rule.getHead().getAtom().getPredicate().getName();
-		            
-		            // Print just for tracing reasons
-		        	outln(TL, "");
-		            outln(TL, "MetaRule Name=[" + rule.getName() + "]");
-			        outln(TL, "MetaRule=[" + rule.toString() + "]");
+		
+    	int metaRuleLayerId = 0;
+    	boolean isObjectRuleHead = true;
+    	int metaRuleLayerRuleIndex[] = new int[MAX_LAYERS];
+    	int metaRuleLayerPredicatesAdded[] = new int[MAX_LAYERS];
+    	int metaRuleVariableIndexBase = 0;
+    	int metaRuleVariableIndexBaseForNextRule = 0;
+  	  	
+		extractedRule = new PrudensRule("S" + String.format("%07d", nlSentence.getIndexInDocument()));
 
-			        // The following condition should be somehow more generic and elegant
-		            if (ruleHeadPredicateName.equals("ruleterms")) {
+		// Iterate through all marked rules
+		for (Rule rule : markedRules) {
+        	
+        	outln(TL, "");
+            outln(TL, "MetaRule Name=[" + rule.getName() + "]");
+	        outln(TL, "MetaRule=[" + rule.toString() + "]");
 
-		            	outln(TL, "MetaRule candidate for extraction!");
-		            	
-		            	boolean isPredicate = true;
-	            		ArrayList<String> predicateIdentifier = new ArrayList<String>();
-	            		ArrayList<String> argumentIdentifiers = new ArrayList<String>();
-	            		
-			            for (Variable var : rule.getHead().getAtom().getPredicate().getVariables()) {
-			            	
-			            	String varName = var.getValue().getName();
-			            	
-			            	// CID - SHOULD ADD A LOT OF CHECKS IN THE FOLLOWING IF STRUCTURE
-			            	// TO MAKE SURE META-KB IS DEVELOPED CORRECTLY
-			            	if (position == 1) {
-				            	if (varName.startsWith("head")) {
-				            		metaRuleMode = RulePart.HEAD;
-					            	outln(TL, "MetaRule Type: Head");
-				            	}
-				            	else if (varName.startsWith("body")) {
-				            		metaRuleMode = RulePart.BODY;
-					            	outln(TL, "MetaRule Type: Body");
-				            	}
-				            	else if (varName.startsWith("conflict")) {
-				            		metaRuleMode = RulePart.HEAD;
-				            		extractedRule.setConflict(true);
-					            	outln(TL, "MetaRule Type: Conflict");
-				            	}
-				            	else {
-					            	errln("\tMetaRule Type: Undefined");
-					            	throw new NLRGMetaKBException(
-					            			ruleHeadPredicateName + ": " +
-					            			"Undefined Metarule Type: " + varName);
-				            	}
-			            	}
+            String ruleHeadPredicateName = rule.getHead().getAtom().getPredicate().getName();
 
-			            	else if (position == 2) {
-			            		try {
-				            		metaRuleLayerId = Integer.parseInt(varName);
-				            		metaRuleLayerRuleIndex[metaRuleLayerId]++;
-					            	outln(TL, "MetaRule Layer: " + metaRuleLayerId);
-					            	outln(TL, "MetaRule Layer Rule Index: " + metaRuleLayerRuleIndex[metaRuleLayerId]);
-			            		}
-			            		catch (Exception e) {
-					            	throw new NLRGMetaKBException(
-					            			ruleHeadPredicateName + ": " +
-					            			"Invalid MetaRule Layer: " + varName +
-					            			"(" + e.getMessage() + ")");
-			            		}
-			            			
-				            }		            	
+            // If this is a rule that has extraction meta-predicate in its head, then it is extraction candidate
+            if (ruleHeadPredicateName.equals(NLRGParameterLib.NLRGMetaKB_ExtractionMetaPredicate)) {
 
-			            	else if (metaRuleLayerRuleIndex[metaRuleLayerId] == 1 || metaRuleLayerPredicatesAdded[metaRuleLayerId] == 0) {
+                outln(TL, "MetaRule candidate for extraction!");
+            	
+            	int position = 1;
+            	int PredicateAdded = 0;
+            	boolean isPredicate = true;
+            	RulePart metaRuleMode = RulePart.UNDEFINED;
+        		ArrayList<String> predicateIdentifier = new ArrayList<String>();
+        		ArrayList<String> argumentIdentifiers = new ArrayList<String>();
+        		
+        		// Iterate through all variables (arguments) of this rule
+	            for (Variable var : rule.getHead().getAtom().getPredicate().getVariables()) {
+	            	
+	            	String varName = var.getValue().getName();
+	            	
+	            	// CID - SHOULD ADD A LOT OF CHECKS IN THE FOLLOWING IF STRUCTURE
+	            	// TO MAKE SURE META-KB IS DEVELOPED CORRECTLY
+	            	if (position == 1) {
+		            	if (varName.startsWith("head")) {
+		            		metaRuleMode = RulePart.HEAD;
+			            	outln(TL, "MetaRule Type: Head");
+		            	}
+		            	else if (varName.startsWith("body")) {
+		            		metaRuleMode = RulePart.BODY;
+			            	outln(TL, "MetaRule Type: Body");
+		            	}
+		            	else if (varName.startsWith("conflict")) {
+		            		metaRuleMode = RulePart.HEAD;
+		            		extractedRule.setConflict(true);
+			            	outln(TL, "MetaRule Type: Conflict");
+		            	}
+		            	else {
+			            	errln("\tMetaRule Type: Undefined");
+			            	throw new NLRGMetaKBException(
+			            			ruleHeadPredicateName + ": " +
+			            			"Undefined Metarule Type: " + varName);
+		            	}
+	            	}
 
-			            		outln(TL, "MetaArgument=[" + varName + "]");
+	            	else if (position == 2) {
+	            		try {
+		            		metaRuleLayerId = Integer.parseInt(varName);
+		            		
+		            		if (metaRuleLayerId >= MAX_LAYERS)
+				            	throw new NLRGMetaKBException("Layer ID greater than maximum number of layers");
 
-			            		if (position == 3 || isPredicate) {
-			            			if (varName.equals("args")) 
-					            		isPredicate = false;
-			            			// If variable is not empty or placeholder
-			            			else if (	!varName.isBlank() &&
-			            						!varName.equals("_") &&
-			            						!varName.equals("\'\'") &&
-			            						!varName.equals("")
-			            					)
-			            				predicateIdentifier.add(varName);
-				            	}
+		            		metaRuleLayerRuleIndex[metaRuleLayerId]++;
+			            	outln(TL, "MetaRule Layer: " + metaRuleLayerId);
+			            	outln(TL, "MetaRule Layer Rule Index: " + metaRuleLayerRuleIndex[metaRuleLayerId]);
+	            		}
+	            		catch (Exception e) {
+			            	throw new NLRGMetaKBException(
+			            			ruleHeadPredicateName + ": " +
+			            			"Invalid MetaRule Layer: " + varName +
+			            			"(" + e.getMessage() + ")");
+	            		}
+	            			
+		            }		            	
 
-			            		else if (varName.equals("next")) {
-					            	RulePart objectRulePart = (isObjectRuleHead && metaRuleMode == RulePart.HEAD ?
-					            								RulePart.HEAD :
-					            								RulePart.BODY
-					            							);
-					            	PredicateAdded = extractedRule.addPredicateWithArgumentsFromLists(
-					            							predicateIdentifier,
-					            							argumentIdentifiers,
-					            							objectRulePart);
-					            	predicateIdentifier = new ArrayList<String>();
-				            		argumentIdentifiers = new ArrayList<String>();
-							        isObjectRuleHead = false; // Only once the rule head is added
-				            		isPredicate = true;
-				            	}
+	            	else if (metaRuleLayerRuleIndex[metaRuleLayerId] == 1 || metaRuleLayerPredicatesAdded[metaRuleLayerId] == 0) {
 
-			            		else if (varName.startsWith("vph-")) {
-			            			try {
-					            		int localVarIndex = Integer.parseInt(varName.substring(4)) + metaRuleLayerVariableIndex[metaRuleLayerId];
+	            		outln(TL, "MetaArgument=[" + varName + "]");
 
-					            		argumentIdentifiers.add("X" + localVarIndex);
+	            		if (position == 3 || isPredicate) {
+	            			if (varName.equals(NLRGParameterLib.NLRGMetaKB_ArgumentSeparator)) 
+			            		isPredicate = false;
+	            			// If variable is not empty or placeholder
+	            			else if (	!varName.isBlank() &&
+	            						!varName.equals("_") &&
+	            						!varName.equals("\'\'") &&
+	            						!varName.equals("")
+	            					)
+	            				predicateIdentifier.add(varName);
+		            	}
 
-					            		metaRuleLayerVariableIndex[metaRuleLayerId+1] =
-					            				(localVarIndex > metaRuleLayerVariableIndex[metaRuleLayerId+1] ?
-					            					localVarIndex :
-					            					metaRuleLayerVariableIndex[metaRuleLayerId+1]);
-						            	
-					            		outln(TL,	"MetaArgument Index[" + metaRuleLayerId +"]: " +
-					            				metaRuleLayerVariableIndex[metaRuleLayerId+1] +
-					            				", Local MetaVariable Index: " + localVarIndex);
-				            		}
-				            		catch (Exception e) {
-						            	throw new NLRGMetaKBException(
-						            			ruleHeadPredicateName + ": " +
-						            			"Invalid MetaRule Variable PlaceHolder: " + varName +
-						            			"(" + e.getMessage() + ")");
-				            		}
-				            	}
-
-			            		else if (!varName.equals("_")) {
-				            		argumentIdentifiers.add(varName);
-				            	}
-				            }
-			            	
-			            	position++;
-			            }
-			            
-			            if (metaRuleLayerRuleIndex[metaRuleLayerId] == 1 || metaRuleLayerPredicatesAdded[metaRuleLayerId] == 0) {
-
+	            		else if (varName.equals(NLRGParameterLib.NLRGMetaKB_PredicateSeparator)) {
 			            	RulePart objectRulePart = (isObjectRuleHead && metaRuleMode == RulePart.HEAD ?
-    								RulePart.HEAD :
-    								RulePart.BODY
-    							);
+			            								RulePart.HEAD :
+			            								RulePart.BODY
+			            							);
 
-			            	PredicateAdded += extractedRule.addPredicateWithArgumentsFromLists(
+			            	if (objectRulePart == RulePart.HEAD)
+						        isObjectRuleHead = false; // Only once the rule head is added
+
+			            	PredicateAdded = extractedRule.addPredicateWithArgumentsFromLists(
 			            							predicateIdentifier,
 			            							argumentIdentifiers,
-			            							objectRulePart);
+			            							objectRulePart,
+			            							ruleDeduction.getMarkedRulesChain(rule));
+
 			            	metaRuleLayerPredicatesAdded[metaRuleLayerId] += PredicateAdded;
+
+			            	ruleDeduction.addToUsedMetaRules(rule);
 
 			            	predicateIdentifier = new ArrayList<String>();
 		            		argumentIdentifiers = new ArrayList<String>();
-			            	isObjectRuleHead = false; // Only once the rule head is added
-			            }
+		            		isPredicate = true;
+		            	}
 
-		        	}
-		            
-		        }
+	            		else if (varName.startsWith(NLRGParameterLib.NLRGMetaKB_VarPlaceholder)) {
+	            			try {
+	            				int varIndexStart = NLRGParameterLib.NLRGMetaKB_VarPlaceholder.length();
+			            		int localVarIndex = Integer.parseInt(varName.substring(varIndexStart)) + metaRuleVariableIndexBase;
 
-	        }
-		        
-        	extractedRule.setComplete(true);
-        	outln(TL, "Rule Successfully Extracted");
-            outln(TL, "");		        
+			            		argumentIdentifiers.add(NLRGParameterLib.NLRGRule_VariableName + localVarIndex);
+
+			            		metaRuleVariableIndexBaseForNextRule =
+			            				(localVarIndex > metaRuleVariableIndexBase ?
+			            					localVarIndex :
+			            					metaRuleVariableIndexBase);
+				            	
+			            		outln(TL,	"Local MetaVariable Index: " + localVarIndex +
+			            					", MetaVariable Index Base: " + metaRuleVariableIndexBase +
+			            					", MetaVariable Index Base For Next Rule: " + metaRuleVariableIndexBaseForNextRule
+			            				);
+		            		}
+		            		catch (Exception e) {
+				            	throw new NLRGMetaKBException(
+				            			ruleHeadPredicateName + ": " +
+				            			"Invalid MetaRule Variable PlaceHolder: " + varName +
+				            			"(" + e.getMessage() + ")");
+		            		}
+		            	}
+
+	            		else if (!varName.equals("_")) {
+		            		argumentIdentifiers.add(varName);
+		            	}
+		            }
+	            	
+	            	position++;
+	            }
+	            
+	            if (metaRuleLayerRuleIndex[metaRuleLayerId] == 1 || metaRuleLayerPredicatesAdded[metaRuleLayerId] == 0) {
+
+	            	RulePart objectRulePart = (isObjectRuleHead && metaRuleMode == RulePart.HEAD ?
+							RulePart.HEAD :
+							RulePart.BODY
+						);
+
+	            	if (objectRulePart == RulePart.HEAD)
+				        isObjectRuleHead = false; // Only once the rule head is added
+
+	            	PredicateAdded += extractedRule.addPredicateWithArgumentsFromLists(
+	            							predicateIdentifier,
+	            							argumentIdentifiers,
+	            							objectRulePart,
+	            							ruleDeduction.getMarkedRulesChain(rule));
+
+	            	metaRuleLayerPredicatesAdded[metaRuleLayerId] += PredicateAdded;
+
+	            	ruleDeduction.addToUsedMetaRules(rule);
+
+	            	predicateIdentifier = new ArrayList<String>();
+            		argumentIdentifiers = new ArrayList<String>();
+	            }
+	            
+	            metaRuleVariableIndexBase = metaRuleVariableIndexBaseForNextRule;
+
+        	}
+                       
         }
 
+       
+		extractedRule.setComplete(true);
+		nlSentence.setExtractedRule(extractedRule);
+		nlSentence.setRuleDeduction(ruleDeduction);
+		outln(TL, "Rule Successfully Extracted");
+	    outln(TL, "");
+	    outln(TL, "Extraction Marked Rules Chain");
+	    outln(TL, ruleDeduction.getMarkedRulesChainText());
+	    outln(TL, "Extraction Marked Rules");
+	    outln(TL, ruleDeduction.getMarkedRulesText());
+//	    outln(TL, "Extraction Deduction JSON objects");
+//	    outln(TL, ruleDeduction.toJSONString());
+	    
 	}
    	        
 	
